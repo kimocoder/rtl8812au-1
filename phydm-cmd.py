@@ -44,12 +44,13 @@ def dump_constants(p):
 		p = pathlib.Path(p)
 		if p.name == 'hal_com.h':
 			def parse_hal_com_data_rates(p):
-				rates = dict()
+				rates = {}
 				for line in p.read_text().splitlines():
 					m = re.search(r'^#define\s+DESC_RATE(\S+)\s+0x(\S+)\s*$', line)
 					if not m: continue
-					rates[int(m.group(2), 16)] = m.group(1)
-				return list(rates.get(n) for n in range(max(rates.keys())+1))
+					rates[int(m[2], 16)] = m[1]
+				return [rates.get(n) for n in range(max(rates.keys())+1)]
+
 			drv_rates = parse_hal_com_data_rates(p)
 		else: raise ValueError(f'Dont know how/what to parse (from) file: {p}')
 
@@ -72,7 +73,7 @@ class ReadlineQuery:
 
 	def __init__(self, opts_base=None):
 		self.log = get_logger('readline')
-		self.opts, self.opts_cmd = opts_base or list(), list()
+		self.opts, self.opts_cmd = opts_base or [], []
 
 	def __enter__(self):
 		self.init()
@@ -88,8 +89,9 @@ class ReadlineQuery:
 	def rl_complete(self, text, state):
 		if state == 0:
 			opts = self.opts_cmd or self.opts
-			self.matches = ( opts[:] if not text else
-				list(s for s in opts if s and s.startswith(text)) )
+			self.matches = (
+				[s for s in opts if s and s.startswith(text)] if text else opts[:]
+			)
 		# self.log.debug('{} from {}', [text, state], self.matches)
 		try: return self.matches[state]
 		except IndexError: return None
@@ -101,7 +103,7 @@ class ReadlineQuery:
 
 
 def get_command_list(node):
-	cmd_list = list()
+	cmd_list = []
 	node.write_text('-h\n')
 	cmd_help = iter(node.read_text(errors='replace').splitlines())
 	cmd_help = it.dropwhile(lambda s: s != 'BB cmd ==>', cmd_help)
